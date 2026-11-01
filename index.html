@@ -360,6 +360,33 @@
   // 標「完成節點」的任務：節點已在樹上完成就算完成
   const fromTree = t => !!(t.marks_node && t.node && state.done[t.node]);
   const taskDone = t => !!talk.done[t.id] || fromTree(t);
+  const addDays = (s, n) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + n); return ymd(d); };
+  // 自動順延：沒做完的任務照原本順序，從今天起重新排到上台前一天。每天的量＝原計畫那天的小時數；
+  // 落後時每天等比例加量，保證全部排得進去、一項都不刪。上台當天的任務固定在當天。
+  // 勾選時記下完成日（talk.done[id] = 日期），今天做完的會扣掉今天的量，清單不會越勾越多。
+  function scheduleTalk(P, all, today){
+    const at = new Map(), scale = { factor: 1, extra: 0 };
+    const doneDate = t => typeof talk.done[t.id] === 'string' ? talk.done[t.id] : t.date;
+    for (const t of all) if (taskDone(t)) at.set(t.id, doneDate(t));
+    const pinned = all.filter(t => !taskDone(t) && t.date === P.talk_date), open = all.filter(t => !taskDone(t) && t.date !== P.talk_date);
+    pinned.forEach(t => at.set(t.id, t.date));
+    if (today < P.start_date || today >= P.talk_date) { open.forEach(t => at.set(t.id, t.date)); return { at, scale }; }
+    const planned = new Map(); for (const t of all) planned.set(t.date, (planned.get(t.date) || 0) + t.hours);
+    const days = []; for (let d = today; d < P.talk_date; d = addDays(d, 1)) days.push(d);
+    const doneToday = all.filter(t => taskDone(t) && at.get(t.id) === today).reduce((a, t) => a + t.hours, 0);
+    const cap = days.map(d => Math.max(0, (planned.get(d) || 0) - (d === today ? doneToday : 0)));
+    const need = open.reduce((a, t) => a + t.hours, 0), have = cap.reduce((a, c) => a + c, 0);
+    if (need > have && have > 0) { scale.factor = need / have; scale.extra = need - have; }
+    // 把每天的量接成一條時間軸，任務依序鋪上去，落在哪一天由任務時數的中點決定（不會全擠到最後一天）
+    const ends = []; cap.reduce((a, c, k) => (ends[k] = a + c * scale.factor), 0);
+    let pos = 0, i = 0;
+    for (const t of open) {
+      const mid = pos + t.hours / 2; pos += t.hours;
+      while (i < days.length - 1 && ends[i] < mid - 0.01) i++;
+      at.set(t.id, days[i]);
+    }
+    return { at, scale };
+  }
   function renderTalk(){
     const el = document.getElementById('tab-talk'), P = (T.talk_plans||[])[0];
     if (!P) { el.innerHTML = ''; return; }
@@ -380,14 +407,19 @@
       <p><strong>${daysLeft > 0 ? `距離 ${mdw(P.talk_date)}上台還有 ${daysLeft} 天` : daysLeft === 0 ? '今天上台' : '報告已結束'}</strong></p>
       <p>${esc(P.goal)}</p>
       <details><summary class="small" style="cursor:pointer">假設與用法</summary><p class="small">${esc(P.assumptions)}</p></details></div>`;
+    const { at, scale } = scheduleTalk(P, all, today);
+    const moved = t => !taskDone(t) && at.get(t.id) !== t.date ? '原訂 ' + mdw(t.date) : '';
     if (today >= P.start_date && today <= P.talk_date) {
-      const todays = all.filter(t => t.date === today), late = all.filter(t => t.date < today && !taskDone(t));
-      html += `<div class="card"><h2>今天 ${mdw(today)}</h2>${todays.length ? `<ul class="tasks">${todays.map(t=>row(t)).join('')}</ul>` : '<p class="small">今天沒有排任務。</p>'}${late.length ? `<h3>還沒做完的（${late.length}，約 ${hrs(late)} 小時）</h3><ul class="tasks">${late.map(t=>row(t, '原訂 ' + mdw(t.date))).join('')}</ul>` : ''}</div>`;
+      const todays = all.filter(t => at.get(t.id) === today);
+      const warn = scale.extra > 0.05 ? `<p class="small late">進度落後約 ${Math.round(scale.extra*10)/10} 小時，已平均分到上台前的每一天：每天比原計畫多約 ${Math.round((scale.factor-1)*100)}%。真的做不完時，先保住論文精讀與排練，節點任務可縮短。</p>` : '';
+      html += `<div class="card"><h2>今天 ${mdw(today)} <span class="small">約 ${hrs(todays)} 小時</span></h2>${warn}${todays.length ? `<ul class="tasks">${todays.map(t=>row(t, moved(t))).join('')}</ul>` : '<p class="small">今天沒有排任務。</p>'}</div>`;
     } else if (today < P.start_date) html += `<div class="card"><p class="small">路徑從 ${mdw(P.start_date)} 開始。</p></div>`;
     for (const ph of P.phases) {
-      const ts = all.filter(t => ph.days.some(d => d.date === t.date)), d = ts.filter(taskDone).length;
-      html += `<div class="card"><h2>${esc(ph.name)} <span class="small">${mdw(ph.days[0].date)}–${mdw(ph.days[ph.days.length-1].date)}</span></h2><div class="sp"><span class="bar"><i style="width:${Math.round(d/ts.length*100)}%"></i></span>${d}/${ts.length} 完成 · 約 ${hrs(ts)} 小時</div><p><strong>目標：</strong>${esc(ph.goal)}</p><p class="small"><strong>產出：</strong>${esc(ph.deliverable)}</p>
-        ${ph.days.map(day => `<h3 class="${day.date===today?'today':''}">${mdw(day.date)}${day.date===today?' 今天':''} <span class="small">約 ${hrs(day.tasks)} 小時</span></h3><ul class="tasks">${day.tasks.map(t=>row(Object.assign({ date:day.date }, t))).join('')}</ul>`).join('')}</div>`;
+      const ids = new Set(ph.days.flatMap(d => d.tasks.map(t => t.id)));
+      const ts = all.filter(t => ids.has(t.id)), d = ts.filter(taskDone).length;
+      const dates = [...new Set(ts.map(t => at.get(t.id)))].sort();
+      html += `<div class="card"><h2>${esc(ph.name)} <span class="small">${mdw(dates[0])}–${mdw(dates[dates.length-1])}</span></h2><div class="sp"><span class="bar"><i style="width:${Math.round(d/ts.length*100)}%"></i></span>${d}/${ts.length} 完成 · 約 ${hrs(ts)} 小時</div><p><strong>目標：</strong>${esc(ph.goal)}</p><p class="small"><strong>產出：</strong>${esc(ph.deliverable)}</p>
+        ${dates.map(day => { const dt = ts.filter(t => at.get(t.id) === day); return `<h3 class="${day===today?'today':''}">${mdw(day)}${day===today?' 今天':''} <span class="small">約 ${hrs(dt)} 小時</span></h3><ul class="tasks">${dt.map(t=>row(t, moved(t))).join('')}</ul>`; }).join('')}</div>`;
     }
     html += `<div class="card"><h2>必背數字</h2><table><thead><tr><th style="width:26%">項目</th><th>數字</th><th style="width:14%">出處</th></tr></thead><tbody>${P.numbers.map(x=>`<tr><td>${esc(x.what)}</td><td>${esc(x.value)}</td><td>${esc(x.src)}</td></tr>`).join('')}</tbody></table></div>`;
     html += `<div class="card"><h2>台上會用到的詞</h2><table><tbody>${P.terms.map(x=>`<tr><td style="width:22%"><strong>${esc(x.term)}</strong></td><td>${esc(x.say)}</td></tr>`).join('')}</tbody></table></div>`;
@@ -400,7 +432,7 @@
     el.querySelectorAll('textarea[data-n]').forEach(t => t.addEventListener('input', ()=>{ talk.notes[t.dataset.n] = t.value; saveTalk(); }));
     el.querySelectorAll('input[data-t]').forEach(c => c.addEventListener('change', ()=>{
       const t = all.find(x => x.id === c.dataset.t);
-      if (c.checked) talk.done[t.id] = true; else delete talk.done[t.id];
+      if (c.checked) talk.done[t.id] = ymd(new Date()); else delete talk.done[t.id];
       saveTalk();
       if (c.checked && t.marks_node && !state.done[t.node]) { setDone(t.node, true); toast('已一併在論文樹上完成節點'); } else renderTalk();
     }));
