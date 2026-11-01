@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>劉怡芬教授論文樹</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%232563eb'/%3E%3Cpath d='M9 22V10h3l4 7 4-7h3v12h-3v-7l-4 7-4-7v7z' fill='white'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#f7f3ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17140f" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="論文樹">
+<meta name="description" content="逢甲大學資訊工程學系劉怡芬副教授的論文樹學習路徑：由資工大學部基礎一路接到她最新論文與實驗室目前方向，可展開收合、勾選完成、進度存在瀏覽器。">
+<script>try { const p = localStorage.getItem('paper-tree-palette'); if (p) document.documentElement.dataset.palette = p; } catch(e){}</script>
+<link rel="stylesheet" href="vendor/fonts/newsreader.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="preload" href="tree.data.js" as="script">
+</head>
+<body>
+
+<div class="layout">
+  <main>
+    <header class="top">
+      <div class="titlerow">
+        <h1 id="title">劉怡芬教授論文樹學習路徑</h1>
+        <div class="palettes" id="palettes" role="radiogroup" aria-label="配色">
+          <button role="radio" data-p="auto" title="自動（跟系統深淺色）" aria-label="自動" style="--sw-bg:#f7f3ea"></button>
+          <button role="radio" data-p="paper" title="紙本" aria-label="紙本" style="--sw-bg:#f7f3ea;--sw-ac:#8a3b1e"></button>
+          <button role="radio" data-p="night" title="夜讀" aria-label="夜讀" style="--sw-bg:#17140f;--sw-ac:#e2a07a"></button>
+          <button role="radio" data-p="graphite" title="石墨" aria-label="石墨" style="--sw-bg:#f1f2f0;--sw-ac:#b3301c"></button>
+          <button role="radio" data-p="mono" title="白紙" aria-label="白紙" style="--sw-bg:#ffffff;--sw-ac:#111111"></button>
+          <button role="radio" data-p="navy" title="藍夜" aria-label="藍夜" style="--sw-bg:#0e141c;--sw-ac:#f0b450"></button>
+        </div>
+      </div>
+      <div class="overall">
+        <div class="bar"><i id="overallBar"></i></div>
+        <strong id="overallText">0%</strong>
+        <span id="hoursText"></span>
+      </div>
+      <button class="nextbtn" id="openNext">下一步</button>
+      <div class="sub" id="subtitle">逢甲大學 資訊電機學院 資訊工程學系 · <a href="https://iecs.fcu.edu.tw/teacher/劉怡芬" target="_blank" rel="noopener">官方教師頁</a> · 查詢日 2026-10-21</div>
+    </header>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="tree">樹狀檢視</button>
+      <button role="tab" aria-selected="false" data-tab="graph">圖形檢視</button>
+      <button role="tab" aria-selected="false" data-tab="talk" id="talkTabBtn" hidden>報告準備</button>
+      <button role="tab" aria-selected="false" data-tab="order">閱讀順序</button>
+      <button role="tab" aria-selected="false" data-tab="selfcheck">自我檢測</button>
+      <button role="tab" aria-selected="false" data-tab="glossary">術語與數學</button>
+      <button role="tab" aria-selected="false" data-tab="worksheets">學習單</button>
+      <button role="tab" aria-selected="false" data-tab="lab">實驗室</button>
+      <button role="tab" aria-selected="false" data-tab="sources">來源</button>
+    </div>
+
+    <section id="tab-tree">
+      <div class="toolbar">
+        <input type="search" id="q" placeholder="搜尋標題、作者、關鍵概念" aria-label="搜尋節點">
+        <select id="priFilter" aria-label="優先度篩選">
+          <option value="all">全部優先度</option>
+          <option value="core">必讀</option>
+          <option value="corerec">必讀＋建議</option>
+        </select>
+        <select id="layerFilter" aria-label="層級篩選">
+          <option value="all">全部層級</option>
+          <option value="0">第 0 層</option><option value="1">第 1 層</option><option value="2">第 2 層</option><option value="3">第 3 層</option><option value="4">第 4 層</option>
+        </select>
+        <details class="menu"><summary id="moreSum">更多篩選</summary><div class="pop">
+          <label><input type="checkbox" id="hideDone"> 隱藏已完成</label>
+          <label><input type="checkbox" id="citedOnly"> 她引用過的</label>
+          <label><input type="checkbox" id="seniorOnly"> 學長讀過的</label>
+        </div></details>
+        <button id="toggleAll">全部收合</button>
+        <details class="menu"><summary>進度</summary><div class="pop">
+          <button id="exportBtn" title="下載 JSON，並複製分享網址">匯出進度</button>
+          <button id="importBtn" title="讀取匯出的 JSON 檔">匯入進度</button>
+          <button id="resetBtn">清除所有勾選</button>
+        </div></details>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
+      <div id="tree"></div>
+    </section>
+
+    <section id="tab-graph" hidden>
+      <div class="toolbar">
+        <span id="gBranches"></span>
+        <label><input type="checkbox" id="gCore"> 必讀＋建議</label>
+        <label><input type="checkbox" id="gCited"> 她引用的連線</label>
+        <button id="gFit">置中</button>
+        </div>
+      <div id="gLegend" class="small"></div>
+      <div id="gWrap" title="滾輪縮放、拖曳平移；點節點高亮先修鏈">
+        <svg id="gSvg" width="100%" height="100%" style="display:block;cursor:grab" aria-label="論文樹圖形：滾輪縮放、拖曳平移"><g id="gRoot"></g></svg>
+        <div id="gTip"></div>
+      </div>
+    </section>
+    <section id="tab-talk" class="talk" hidden></section>
+    <section id="tab-order" hidden></section>
+    <section id="tab-selfcheck" hidden></section>
+    <section id="tab-worksheets" hidden></section>
+    <section id="tab-glossary" hidden>
+      <div class="toolbar"><input type="search" id="gq" placeholder="搜尋術語（中英文）" aria-label="搜尋術語"></div>
+      <div id="glossaryBody"></div>
+    </section>
+    <section id="tab-lab" hidden></section>
+    <section id="tab-sources" hidden></section>
+  </main>
+
+  <aside id="aside">
+    <button class="asidetoggle" id="asideToggle" aria-expanded="true" aria-controls="detail" aria-label="收合側欄" title="收合側欄"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="closeaside" id="closeAside" aria-label="關閉"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <div id="detail" class="detail"><div class="empty">點選節點查看詳細。</div></div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'paper-tree-progress-v1';
+  let T = window.PAPER_TREE || null;
+  let state = { done: {}, collapsed: {}, updatedAt: null };
+  let byId = new Map(), dependents = new Map(), order = [];
+  let activeId = null;
+
+  function loadState(){
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) state = Object.assign(state, JSON.parse(s)); } catch(e){}
+    // 2026-10-30 起分支預設收起：舊版每次載入都把「展開」寫成 false，一次性清掉分支的收合記錄（勾選進度 done 不動）
+    if (!state.branchDefaultCollapsed) { for (const k of Object.keys(state.collapsed || {})) if (k.startsWith('b:')) delete state.collapsed[k]; state.branchDefaultCollapsed = true; try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){} }
+    // 透過網址 #progress=<base64 JSON> 匯入（用於分享/備份）；可與 &node=<id> 並用
+    try {
+      const m = location.hash.match(/progress=([A-Za-z0-9+/=_-]+)/);
+      if (m) {
+        const obj = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')))));
+        if (obj && obj.done) { state.done = obj.done; saveState(); const nm = location.hash.match(/node=([\w-]+)/), tb = location.hash.match(/tab=(\w+)/); history.replaceState(null,'',location.pathname + '#' + [tb ? 'tab=' + tb[1] : '', nm ? 'node=' + nm[1] : ''].filter(Boolean).join('&')); toast('已從網址匯入進度'); }
+      }
+    } catch(e){}
+  }
+  function saveState(){ state.updatedAt = new Date().toISOString(); try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){ toast('無法儲存進度（瀏覽器儲存被封鎖）'); } }
+  function toast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 1800); }
+  const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const branchColor = id => `var(--${id})`;
+
+  function init(){
+    byId = new Map(T.nodes.map(n => [n.id, n]));
+    dependents = new Map();
+    for (const n of T.nodes) for (const p of n.prereqs) { if (!dependents.has(p)) dependents.set(p, []); dependents.get(p).push(n.id); }
+    order = []; for (const s of T.reading_plan.segments) for (const id of s.nodes) order.push(id);
+    document.getElementById('title').textContent = T.title.replace(/（.*?）/, '');
+    const p = T.professor;
+    document.getElementById('subtitle').innerHTML = `${esc(p.department)} · <a href="${esc(p.official_pages[0].url)}" target="_blank" rel="noopener">官方教師頁</a> · 查詢日 ${esc(T.query_date)}`;
+    loadWs(); const wsHash = location.hash.match(/ws=([\w-]+)/); if (wsHash) wsActive = wsHash[1];
+    loadTalk(); const tp = (T.talk_plans||[])[0], tb = document.getElementById('talkTabBtn'); if (tp) { tb.textContent = tp.tab_label; tb.hidden = false; }
+    renderTree(); updateProgress(); renderNext();
+    // 其他分頁等樹狀檢視先畫出來再渲染（縮短首屏）；若網址指定分頁則立刻渲染
+    let restDone = false; const renderRest = window.__renderRest = () => { if (restDone) return; restDone = true; renderTalk(); renderOrder(); renderSelfCheck(); renderGlossary(); renderWorksheets(); renderLab(); renderSources(); renderGraphControls(); };
+    const tabm = location.hash.match(/tab=(\w+)/); if (tabm) renderRest(); else (window.requestIdleCallback || (fn => setTimeout(fn, 50)))(renderRest);
+    if (tabm) { const b = document.querySelector(`.tabs [data-tab="${tabm[1]}"]`); if (b) b.click(); }
+    const want = location.hash.match(/node=([\w-]+)/); if (want && byId.has(want[1])) { showDetail(want[1]); if (tabm && tabm[1] === 'graph') { const gl = document.querySelector('#detail [data-graph]'); if (gl) gl.click(); } }
+  }
+
+  // ---------- filters ----------
+  function passes(n){
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const pf = document.getElementById('priFilter').value;
+    const lf = document.getElementById('layerFilter').value;
+    if (document.getElementById('hideDone').checked && state.done[n.id]) return false;
+    if (document.getElementById('citedOnly').checked && !(n.cited_by_her && n.cited_by_her.length)) return false;
+    if (document.getElementById('seniorOnly').checked && !(n.read_by && n.read_by.length)) return false;
+    if (pf === 'core' && n.priority !== 'core') return false;
+    if (pf === 'corerec' && n.priority === 'optional') return false;
+    if (lf !== 'all' && String(n.layer) !== lf) return false;
+    if (q) { const hay = [n.id, n.title, n.authors.join(' '), n.venue, n.key_concepts.join(' '), n.why].join(' ').toLowerCase(); if (!hay.includes(q)) return false; }
+    return true;
+  }
+  function prereqsDone(n){ return n.prereqs.filter(p => !state.done[p]); }
+
+  // ---------- tree ----------
+  function renderTree(){
+    const root = document.getElementById('tree'); root.innerHTML = '';
+    const first = !root.dataset.built; root.dataset.built = '1'; root.classList.toggle('boot', first); if (first) setTimeout(()=> root.classList.remove('boot'), 1400);
+    const orderIdx = new Map(order.map((id,i)=>[id,i]));
+    // 首次載入只同步畫第一個分支，其餘分支逐格補上（縮短首屏、避免單一長任務）；之後的重畫一次畫完
+    const pending = [];
+    const buildBranch = (b) => {
+      const nodes = T.nodes.filter(n => n.branch === b.id).sort((a,c)=> a.layer-c.layer || (orderIdx.get(a.id)-orderIdx.get(c.id)));
+      const visible = nodes.filter(passes);
+      if (!visible.length && document.getElementById('q').value) return;
+      const det = document.createElement('details'); det.className = 'branch'; det.id = 'br-' + b.id; det.style.setProperty('--bc', branchColor(b.id));
+      det.open = state.collapsed['b:'+b.id] === false; // 分支預設收起，展開過的才記為 false
+      det.addEventListener('toggle', ()=>{ state.collapsed['b:'+b.id] = !det.open; saveState(); });
+      const body = document.createElement('div'); body.className = 'body';
+      const doneN = nodes.filter(n=>state.done[n.id]).length;
+      const pct = nodes.length ? Math.round(doneN/nodes.length*100) : 0;
+      det.innerHTML = `<summary><span class="caret"></span><span class="name">${esc(b.name)}</span>${b.lab_priority?'<span class="lab">實驗室最優先</span>':''}<span class="bprog"><span class="bar"><i style="width:${pct}%"></i></span><span>${doneN}/${nodes.length}</span></span><span class="desc">${esc(b.desc)}</span></summary>`;
+      for (const L of T.layers) {
+        const ln = visible.filter(n => n.layer === L.id); if (!ln.length) continue;
+        const all = nodes.filter(n=>n.layer===L.id);
+        const ld = document.createElement('details'); ld.className = 'layer'; const key = 'l:'+b.id+':'+L.id;
+        ld.open = !state.collapsed[key];
+        ld.dataset.layer = L.id;
+        ld.addEventListener('toggle', ()=>{ state.collapsed[key] = !ld.open; saveState(); });
+        const ldone = all.filter(n=>state.done[n.id]).length;
+        const lhrs = Math.round(all.filter(n=>!state.done[n.id]).reduce((s,n)=>s+n.est_hours,0)*10)/10;
+        ld.innerHTML = `<summary><span class="caret"></span>${esc(L.name)} <span class="cnt">${ldone}/${all.length}</span><span class="lh">${lhrs?`· 剩 ${lhrs} h`:''}</span></summary>`;
+        const ul = document.createElement('ul'); ul.className = 'nodes';
+        for (const n of ln) ul.appendChild(nodeRow(n));
+        const lb = document.createElement('div'); lb.className = 'body'; lb.appendChild(ul); ld.appendChild(lb); body.appendChild(ld);
+        ld.querySelector(':scope > summary').addEventListener('click', animDetails);
+      }
+      det.appendChild(body); det.querySelector(':scope > summary').addEventListener('click', animDetails);
+      root.appendChild(det);
+    };
+    for (const b of T.branches) { if (first && root.children.length) pending.push(b); else buildBranch(b); }
+    if (pending.length) { const gen = root.dataset.built + ':' + Date.now(); root.dataset.gen = gen; const step = () => { if (root.dataset.gen !== gen || !pending.length) return; buildBranch(pending.shift()); setTimeout(step, 0); }; setTimeout(step, 0); }
+    if (!root.children.length && !pending.length) root.innerHTML = '<div class="empty">沒有符合條件的節點。</div>';
+    document.getElementById('toggleAll').textContent = allCollapsed() ? '全部展開' : '全部收合';
+    const nf = ['hideDone','citedOnly','seniorOnly'].filter(id => document.getElementById(id).checked).length;
+    document.getElementById('moreSum').textContent = nf ? `更多篩選（${nf}）` : '更多篩選';
+  }
+  const RM = matchMedia('(prefers-reduced-motion: reduce)');
+  const canTween = () => !!window.gsap && !RM.matches && document.visibilityState === 'visible';
+  function animDetails(e){
+    const det = e.currentTarget.parentElement, body = det.querySelector(':scope > .body');
+    if (!body || !canTween()) return;
+    e.preventDefault();
+    if (det._closing) { det._tw.kill(); det._closing = false; det._tw = gsap.to(body, { height:'auto', opacity:1, duration:.2, ease:'power4.out', clearProps:'height,opacity' }); return; }
+    if (det._tw) det._tw.kill();
+    if (det.open) {
+      det._closing = true;
+      det._tw = gsap.to(body, { height:0, opacity:0, duration:.22, ease:'power4.out', onComplete(){ det.open = false; det._closing = false; gsap.set(body, { clearProps:'height,opacity' }); } });
+    } else {
+      det.open = true;
+      det._tw = gsap.from(body, { height:0, opacity:0, duration:.25, ease:'power4.out', clearProps:'height,opacity' });
+    }
+  }
+  // 勾選後只更新受影響的列與計數，不重畫整棵樹（保留勾選圓點的過渡）
+  function refreshRows(id){
+    const li = document.querySelector('#tree li.node[data-id="' + id + '"]'); if (li) li.classList.toggle('done', !!state.done[id]);
+    for (const d of dependents.get(id) || []) { const row = document.querySelector('#tree li.node[data-id="' + d + '"]'); if (row) row.replaceWith(nodeRow(byId.get(d))); }
+    refreshCounts();
+  }
+  function refreshCounts(){
+    for (const b of T.branches) {
+      const det = document.getElementById('br-' + b.id); if (!det) continue;
+      const nodes = T.nodes.filter(n => n.branch === b.id), d = nodes.filter(n => state.done[n.id]).length;
+      const bar = det.querySelector(':scope > summary .bar > i'); if (bar) bar.style.width = (nodes.length ? Math.round(d/nodes.length*100) : 0) + '%';
+      const ct = det.querySelector(':scope > summary .bprog span:last-child'); if (ct) ct.textContent = d + '/' + nodes.length;
+      det.querySelectorAll(':scope > .body > details.layer').forEach(ld => {
+        const all = nodes.filter(n => String(n.layer) === ld.dataset.layer), ldone = all.filter(n => state.done[n.id]).length;
+        const lhrs = Math.round(all.filter(n => !state.done[n.id]).reduce((s,n) => s + n.est_hours, 0) * 10) / 10;
+        ld.querySelector('.cnt').textContent = ldone + '/' + all.length;
+        ld.querySelector('.lh').textContent = lhrs ? '· 剩 ' + lhrs + ' h' : '';
+      });
+    }
+  }
+  function allCollapsed(){ return T.branches.every(b => state.collapsed['b:'+b.id] !== false); }
+  const PRI_TREE = { core:'必讀', recommended:'建議', optional:'選讀' };
+  function nodeRow(n){
+    const li = document.createElement('li'); li.className = 'node' + (state.done[n.id] ? ' done':'') + (n.id===activeId?' active':''); li.dataset.id = n.id;
+    const missing = prereqsDone(n);
+    if (missing.length && !state.done[n.id]) li.classList.add('locked');
+    li.innerHTML = `<input type="checkbox" ${state.done[n.id]?'checked':''} aria-label="完成 ${esc(n.title)}">
+      <div><button class="t">${esc(n.title)}</button>
+        <div class="m">${[`${esc(n.authors[0])}${n.authors.length>1?' 等':''} · ${esc(n.year)}`, `<span class="pri ${n.priority}">${PRI_TREE[n.priority]||esc(n.priority)}</span>`, missing.length?`<span class="blocked">先修未完成 ${missing.length}</span>`:'', (n.cited_by_her||[]).length?`被她引用 ${n.cited_by_her.length} 篇`:'', (n.read_by||[]).length?`${esc(n.read_by.map(r=>r.who).join('、'))}讀過`:'', (n.videos||[]).length?`${n.videos.length} 部影片`:''].filter(Boolean).join(' · ')}</div></div>
+      <div class="hrs">${n.est_hours} h</div>`;
+    li.querySelector('input').addEventListener('change', e => setDone(n.id, e.target.checked));
+    li.querySelector('.t').addEventListener('click', () => showDetail(n.id));
+    return li;
+  }
+  function setDone(id, v){ if (v) state.done[id] = true; else delete state.done[id]; saveState(); if (document.getElementById('hideDone').checked) renderTree(); else refreshRows(id); renderTalk(); renderOrder(); updateProgress(); if (G.built) { const g = document.querySelector(`.gnode[data-id="${id}"]`); if (g) { g.classList.toggle('done', !!state.done[id]); const t = g.querySelector('.gid'); if (t) t.textContent = t.textContent.replace(' ✓','') + (state.done[id]?' ✓':''); } } if (activeId) showDetail(activeId, true); else renderNext(); }
+
+  // ---------- next steps (aside empty state) ----------
+  function nextNodes(k){
+    const seen = new Set(order), seq = order.map(id=>byId.get(id)).filter(Boolean).concat(T.nodes.filter(n=>!seen.has(n.id)));
+    return seq.filter(n => !state.done[n.id] && !prereqsDone(n).length).slice(0, k);
+  }
+  function renderNext(){
+    const el = document.getElementById('detail'), list = nextNodes(5);
+    const bov = T.branches.map(b => { const ns = T.nodes.filter(n=>n.branch===b.id), d = ns.filter(n=>state.done[n.id]).length, left = Math.round(ns.filter(n=>!state.done[n.id]).reduce((a,n)=>a+n.est_hours,0)); return `<li style="--bc:${branchColor(b.id)}"><button data-br="${esc(b.id)}" title="${esc(b.name)} · 剩 ${left} 小時"><span class="nm">${esc(b.name)}</span><span class="bar"><i style="width:${ns.length?Math.round(d/ns.length*100):0}%"></i></span><span class="ct">${d}/${ns.length}</span></button></li>`; }).join('');
+    const bovHtml = `<h3>各分支進度</h3><ul class="bov">${bov}</ul>`;
+    if (!list.length) { el.innerHTML = `<div class="next"><h2>下一步</h2><p class="small">所有節點都已完成。</p>${bovHtml}</div>`; bindNext(el); return; }
+    el.innerHTML = `<div class="next"><h2 title="依閱讀順序，先修都已完成的節點">下一步<span class="num">${list.length}</span></h2><ol>${list.map(n=>{ const b = T.branches.find(x=>x.id===n.branch); return `<li style="--bc:${branchColor(n.branch)}"><button data-go="${esc(n.id)}"><span><span class="t">${esc(n.title)}</span><span class="m" style="display:block"><i>${esc(b?b.name:'')}</i> · ${esc(T.layers.find(x=>x.id===n.layer).name.split('：')[0])} · ${n.est_hours} h</span></span></button></li>`; }).join('')}</ol>${bovHtml}</div>`;
+    bindNext(el);
+  }
+  function bindNext(el){
+    el.querySelectorAll('[data-go]').forEach(btn => btn.addEventListener('click', ()=> showDetail(btn.dataset.go)));
+    el.querySelectorAll('[data-br]').forEach(btn => btn.addEventListener('click', ()=> { document.querySelector('.tabs [data-tab="tree"]').click(); const det = document.getElementById('br-' + btn.dataset.br); if (!det) return; det.open = true; document.getElementById('aside').classList.remove('open'); det.scrollIntoView({ behavior:'smooth', block:'start' }); }));
+  }
+
+  // ---------- progress ----------
+  function updateProgress(){
+    const total = T.nodes.length, done = T.nodes.filter(n=>state.done[n.id]).length;
+    const pct = Math.round(done/total*100);
+    document.getElementById('overallBar').style.width = pct + '%';
+    const ot = document.getElementById('overallText'), prev = Number(ot.dataset.v || 0); ot.dataset.v = pct;
+    if (canTween() && prev !== pct) { const o = { v: prev }; gsap.to(o, { v: pct, duration:.3, ease:'none', onUpdate(){ ot.textContent = Math.round(o.v) + '%'; } }); } else ot.textContent = `${pct}%`;
+    const hDone = T.nodes.filter(n=>state.done[n.id]).reduce((s,n)=>s+n.est_hours,0);
+    document.getElementById('hoursText').textContent = `${done}/${total} 節點 · ${Math.round(hDone)}/${T.reading_plan.total_hours} 小時`;
+  }
+
+  // ---------- detail ----------
+  function showDetail(id, keepScroll){
+    const n = byId.get(id); if (!n) return; activeId = id;
+    document.querySelectorAll('li.node').forEach(li => li.classList.toggle('active', li.dataset.id===id));
+    const b = T.branches.find(x=>x.id===n.branch), L = T.layers.find(x=>x.id===n.layer);
+    const chip = (pid, cls) => { const p = byId.get(pid); return p ? `<a class="${state.done[pid]?'done':''}" data-go="${pid}" title="${esc(p.title)}">${state.done[pid]?'✓ ':''}${esc(pid)}</a>` : ''; };
+    const el = document.getElementById('detail');
+    el.classList.remove('reveal'); if (!keepScroll) { void el.offsetWidth; el.classList.add('reveal'); }
+    el.innerHTML = `
+      <button class="backnext" id="backNext">← 下一步</button>
+      <h2>${esc(n.title)}</h2>
+      <div class="meta">${esc(n.authors.join('、'))}<br>${esc(n.year)} · ${esc(n.venue)}<br>
+        ${esc(b.name)} · ${esc(L.name.split('：')[0])} · <span class="pri ${n.priority}">${PRI_TREE[n.priority]||esc(n.priority)}</span> · 預估 ${n.est_hours} 小時${n.doi?` · DOI <a href="https://doi.org/${esc(n.doi)}" target="_blank" rel="noopener">${esc(n.doi)}</a>`:''}${n.citations&&n.citations.count!=null?` · 被引用 ${n.citations.count}（${esc(n.citations.source)}，${esc(n.citations.date)}）`:''}</div>
+      <button class="donebtn ${state.done[id]?'on':''}" id="toggleDone"${state.done[id]?' title="點擊取消"':''}>${state.done[id]?'✓ 已完成':'標記為完成'}</button>
+      <h3>取得方式</h3><div class="links">${n.links.map(l=>`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}<span class="acc ${esc(l.access)}">${({open:'開放取用',library:'學校圖書館',record:'書目紀錄',paywall:'付費'})[l.access]||esc(l.access)}</span></a>`).join('')}</div>
+      ${(n.videos||[]).length ? `<h3>教學影片（${n.videos.length}）</h3><div class="links">${n.videos.map(v=>`<a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.title)}<span class="acc ${v.lang==='en'?'':'open'}">${({'zh-TW':'中文（繁）','zh-CN':'中文（簡）','en':'英文'})[v.lang]||esc(v.lang)}</span><span class="small"> · ${esc(v.channel)}${v.length?' · '+esc(v.length):''}</span></a>`).join('')}</div>` : ''}
+      ${n.worksheet_series ? `<p><a href="#" data-openws="1">學習單 ${(T.worksheets&&T.worksheets.items.length)||0} 份 →</a></p>` : ''}
+      <h3>為什麼要讀</h3><p>${esc(n.why)}</p>
+      <h3>關鍵概念</h3><ul>${n.key_concepts.map(k=>`<li>${esc(k)}</li>`).join('')}</ul>
+      <h3>自我檢查</h3><ol>${n.self_check.map(k=>`<li>${esc(k)}</li>`).join('')}</ol>
+      <h3>完成標準</h3><p>${esc(n.done_criteria)}</p>
+      <h3>先修（${n.prereqs.length}）</h3><div class="pre">${n.prereqs.length?n.prereqs.map(p=>chip(p)).join(''):'<span class="small">無</span>'}</div>
+      <h3>後續（${(dependents.get(id)||[]).length}）</h3><div class="dep">${(dependents.get(id)||[]).map(p=>chip(p)).join('')||'<span class="small">無</span>'}</div>
+      ${(n.cited_by_her||[]).length ? `<h3>她的論文引用（${n.cited_by_her.length}）</h3><div class="dep">${n.cited_by_her.map(p=>chip(p)).join('')}</div>` : ''}
+      ${(n.read_by||[]).length ? `<h3>學長讀過</h3><ul>${n.read_by.map(r=>`<li>${esc(r.who)}（${esc(r.when)}，${esc(r.where)}）</li>`).join('')}</ul>` : ''}
+      <p style="margin-top:12px"><a href="#" data-graph="${esc(id)}">在圖形中定位</a></p>
+      <h3>查證</h3><p class="small">${esc(n.verified.method)}（${esc(n.verified.date)}）</p>`;
+    el.querySelector('#toggleDone').addEventListener('click', ()=> setDone(id, !state.done[id]));
+    el.querySelector('#backNext').addEventListener('click', ()=> { activeId = null; document.querySelectorAll('li.node.active').forEach(li=>li.classList.remove('active')); el.classList.remove('reveal'); void el.offsetWidth; el.classList.add('reveal'); renderNext(); const curTab = document.querySelector('.tabs [aria-selected="true"]').dataset.tab; history.replaceState(null, '', curTab !== 'tree' ? '#tab=' + curTab : location.pathname); });
+    el.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', ()=> { showDetail(a.dataset.go); }));
+    const ows = el.querySelector('[data-openws]'); if (ows) ows.addEventListener('click', e => { e.preventDefault(); document.querySelector('.tabs [data-tab="worksheets"]').click(); document.getElementById('aside').classList.remove('open'); window.scrollTo({top:0}); });
+    const gl = el.querySelector('[data-graph]'); if (gl) gl.addEventListener('click', e => { e.preventDefault(); document.querySelector('.tabs [data-tab="graph"]').click(); if (G.hidden.has(n.branch)) { G.hidden.delete(n.branch); const cb = document.querySelector(`#gBranches input[data-b="${n.branch}"]`); if (cb) cb.checked = true; buildGraph(); } selectGraphNode(id); const p = G.pos.get(id); if (p) { const w = document.getElementById('gWrap').clientWidth, h = document.getElementById('gWrap').clientHeight; G.zoom = Math.max(G.zoom, 0.9); G.tx = w/2 - p.x*G.zoom; G.ty = h/2 - p.y*G.zoom; applyGraphTransform(); } });
+    if (!keepScroll) { setAsideCollapsed(false); document.getElementById('aside').scrollTop = 0; document.getElementById('aside').classList.add('open'); }
+    const curTab = document.querySelector('.tabs [aria-selected="true"]').dataset.tab;
+    history.replaceState(null, '', '#' + (curTab !== 'tree' ? 'tab=' + curTab + '&' : '') + 'node=' + id);
+  }
+
+  // ---------- order tab ----------
+  function renderOrder(){
+    const el = document.getElementById('tab-order');
+    const rp = T.reading_plan;
+    let html = `<div class="card"><h2>建議閱讀順序</h2><p>總時數約 ${rp.total_hours} 小時（只走必讀＋建議約 ${rp.total_hours_core_recommended} 小時）；每週 ${rp.weekly_hours} 小時約需 ${rp.estimated_weeks} 週。</p><details><summary class="small" style="cursor:pointer">假設與時程</summary><p class="small">${esc(rp.assumptions)}</p><p class="small">${esc(rp.schedule_note)}</p></details></div>`;
+    for (const s of rp.segments) {
+      const nodes = s.nodes.map(id=>byId.get(id)).filter(Boolean);
+      const d = nodes.filter(n=>state.done[n.id]).length, h = nodes.reduce((a,n)=>a+n.est_hours,0);
+      html += `<div class="card seg"><h2>段 ${s.order}：${esc(s.name)}</h2><div class="sp"><span class="bar"><i style="width:${nodes.length?Math.round(d/nodes.length*100):0}%"></i></span>${d}/${nodes.length} 完成 · 約 ${h} 小時</div><p class="goal"><strong>目標：</strong>${esc(s.goal)}</p><ul class="nodes" data-seg="${s.order}"></ul></div>`;
+    }
+    el.innerHTML = html;
+    for (const s of rp.segments) { const ul = el.querySelector(`ul[data-seg="${s.order}"]`); for (const id of s.nodes) { const n = byId.get(id); if (n) ul.appendChild(nodeRow(n)); } }
+  }
+  // ---------- talk plan tab ----------
+  const TALK_KEY = 'paper-tree-talk-v1';
+  let talk = { done:{}, notes:{} };
+  function loadTalk(){ try { const s = localStorage.getItem(TALK_KEY); if (s) talk = Object.assign(talk, JSON.parse(s)); } catch(e){} }
+  function saveTalk(){ try { localStorage.setItem(TALK_KEY, JSON.stringify(talk)); } catch(e){ toast('無法儲存報告進度（瀏覽器儲存被封鎖）'); } }
+  const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const mdw = s => { const d = new Date(s + 'T00:00:00'); return `${d.getMonth()+1}/${d.getDate()}（${'日一二三四五六'[d.getDay()]}）`; };
+  const TALK_KIND = { node:'節點', paper:'論文', slides:'投影片', practice:'練習' };
+  // 標「完成節點」的任務：節點已在樹上完成就算完成
+  const fromTree = t => !!(t.marks_node && t.node && state.done[t.node]);
+  const taskDone = t => !!talk.done[t.id] || fromTree(t);
+  function renderTalk(){
+    const el = document.getElementById('tab-talk'), P = (T.talk_plans||[])[0];
+    if (!P) { el.innerHTML = ''; return; }
+    const today = ymd(new Date());
+    const all = P.phases.flatMap(p => p.days.flatMap(d => d.tasks.map(t => Object.assign({ date:d.date }, t))));
+    const hrs = list => Math.round(list.reduce((a,t)=>a+t.hours,0)*10)/10;
+    const doneN = all.filter(taskDone).length, pct = Math.round(doneN/all.length*100);
+    const daysLeft = Math.round((new Date(P.talk_date+'T00:00:00') - new Date(today+'T00:00:00')) / 864e5);
+    const nodeIds = [...new Set(all.filter(t=>t.node).map(t=>t.node))], nodesDone = nodeIds.filter(id=>state.done[id]).length;
+    const chip = id => { const n = byId.get(id); if (!n) return ''; const s = n.title.replace(/（.*?）$/,''); return `<a class="${state.done[id]?'done':''}" data-go="${esc(id)}" title="${esc(n.title)}">${state.done[id]?'✓ ':''}${esc(s.length>42?s.slice(0,42)+'…':s)}</a>`; };
+    const row = (t, lateTag) => { const d = taskDone(t), tree = fromTree(t);
+      const meta = [t.scope ? esc(t.scope) : '', t.pages ? `論文 ${esc(t.pages)}` : '', t.slides ? `投影片第 ${esc(t.slides)} 頁` : '', t.node ? chip(t.node) : '', t.marks_node ? (tree ? '節點已完成' : '勾選時一併完成節點') : '', lateTag ? `<span class="late">${lateTag}</span>` : ''].filter(Boolean).join(' · ');
+      return `<li class="tk ${d?'done':''}"><input type="checkbox" data-t="${esc(t.id)}" ${d?'checked':''} ${tree?'disabled title="這個節點已在論文樹上勾選完成；要取消請到節點詳細面板"':''} aria-label="完成：${esc(t.text)}"><div><span class="kind">${TALK_KIND[t.kind]||''}</span><span class="tx">${esc(t.text)}</span>${meta?`<div class="m">${meta}</div>`:''}</div><div class="hrs">${t.hours} h</div></li>`; };
+    let html = `<div class="card"><h2>${esc(P.title)}</h2>
+      <p><a href="${esc(P.paper.url)}" target="_blank" rel="noopener">${esc(P.paper.title)}</a><br><span class="small">${esc(P.paper.authors)}</span></p>
+      <p class="small files">${P.paper.files.map(f=>`<a href="file:///${esc(f.path)}" target="_blank" rel="noopener" title="${esc(f.path)}">${esc(f.label)}</a>`).join('')}</p>
+      <div class="sp"><span class="bar"><i style="width:${pct}%"></i></span>任務 ${doneN}/${all.length} · ${hrs(all.filter(taskDone))}/${hrs(all)} 小時 · 用到 ${nodeIds.length} 個樹節點（已完成 ${nodesDone}）</div>
+      <p><strong>${daysLeft > 0 ? `距離 ${mdw(P.talk_date)}上台還有 ${daysLeft} 天` : daysLeft === 0 ? '今天上台' : '報告已結束'}</strong></p>
+      <p>${esc(P.goal)}</p>
+      <details><summary class="small" style="cursor:pointer">假設與用法</summary><p class="small">${esc(P.assumptions)}</p></details></div>`;
+    if (today >= P.start_date && today <= P.talk_date) {
+      const todays = all.filter(t => t.date === today), late = all.filter(t => t.date < today && !taskDone(t));
+      html += `<div class="card"><h2>今天 ${mdw(today)}</h2>${todays.length ? `<ul class="tasks">${todays.map(t=>row(t)).join('')}</ul>` : '<p class="small">今天沒有排任務。</p>'}${late.length ? `<h3>還沒做完的（${late.length}，約 ${hrs(late)} 小時）</h3><ul class="tasks">${late.map(t=>row(t, '原訂 ' + mdw(t.date))).join('')}</ul>` : ''}</div>`;
+    } else if (today < P.start_date) html += `<div class="card"><p class="small">路徑從 ${mdw(P.start_date)} 開始。</p></div>`;
+    for (const ph of P.phases) {
+      const ts = all.filter(t => ph.days.some(d => d.date === t.date)), d = ts.filter(taskDone).length;
+      html += `<div class="card"><h2>${esc(ph.name)} <span class="small">${mdw(ph.days[0].date)}–${mdw(ph.days[ph.days.length-1].date)}</span></h2><div class="sp"><span class="bar"><i style="width:${Math.round(d/ts.length*100)}%"></i></span>${d}/${ts.length} 完成 · 約 ${hrs(ts)} 小時</div><p><strong>目標：</strong>${esc(ph.goal)}</p><p class="small"><strong>產出：</strong>${esc(ph.deliverable)}</p>
+        ${ph.days.map(day => `<h3 class="${day.date===today?'today':''}">${mdw(day.date)}${day.date===today?' 今天':''} <span class="small">約 ${hrs(day.tasks)} 小時</span></h3><ul class="tasks">${day.tasks.map(t=>row(Object.assign({ date:day.date }, t))).join('')}</ul>`).join('')}</div>`;
+    }
+    html += `<div class="card"><h2>必背數字</h2><table><thead><tr><th style="width:26%">項目</th><th>數字</th><th style="width:14%">出處</th></tr></thead><tbody>${P.numbers.map(x=>`<tr><td>${esc(x.what)}</td><td>${esc(x.value)}</td><td>${esc(x.src)}</td></tr>`).join('')}</tbody></table></div>`;
+    html += `<div class="card"><h2>台上會用到的詞</h2><table><tbody>${P.terms.map(x=>`<tr><td style="width:22%"><strong>${esc(x.term)}</strong></td><td>${esc(x.say)}</td></tr>`).join('')}</tbody></table></div>`;
+    html += `<div class="card"><h2>預期問題（${P.qa.length}）</h2>${P.qa.map((q,i)=>`<details class="qa"><summary>${i+1}. ${esc(q.q)}</summary><textarea data-n="qa${i}" placeholder="我的答案">${esc(talk.notes['qa'+i]||'')}</textarea><details class="hint"><summary>提示</summary><p>${esc(q.hint)}</p>${(q.nodes||[]).length?`<p class="small dep">相關節點：${q.nodes.map(chip).join('')}</p>`:''}</details></details>`).join('')}</div>`;
+    html += `<div class="card"><h2>我的講稿與筆記</h2>${P.pitch_prompts.map(p=>`<p style="margin-top:18px"><strong>${esc(p.label)}</strong></p><textarea data-n="${esc(p.key)}" placeholder="${esc(p.placeholder||'寫在這裡…')}">${esc(talk.notes[p.key]||'')}</textarea>`).join('')}</div>`;
+    const openQa = [...el.querySelectorAll('details.qa')].map(d => d.open);
+    el.innerHTML = html;
+    el.querySelectorAll('details.qa').forEach((d,i) => { if (openQa[i]) d.open = true; });
+    el.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); showDetail(a.dataset.go); }));
+    el.querySelectorAll('textarea[data-n]').forEach(t => t.addEventListener('input', ()=>{ talk.notes[t.dataset.n] = t.value; saveTalk(); }));
+    el.querySelectorAll('input[data-t]').forEach(c => c.addEventListener('change', ()=>{
+      const t = all.find(x => x.id === c.dataset.t);
+      if (c.checked) talk.done[t.id] = true; else delete talk.done[t.id];
+      saveTalk();
+      if (c.checked && t.marks_node && !state.done[t.node]) { setDone(t.node, true); toast('已一併在論文樹上完成節點'); } else renderTalk();
+    }));
+  }
+  // ---------- self-check tab ----------
+  function renderSelfCheck(){
+    const sc = T.self_check;
+    let html = `<div class="card"><h2>第 0 層自我檢測</h2><p>${esc(sc.intro)}</p></div>`;
+    for (const it of sc.items) {
+      html += `<div class="card"><h2>${esc(it.topic)} <span class="small"><button class="linkbtn" data-go="${esc(it.node)}">${esc(it.node)}</button>${state.done[it.node]?' ✓':''}</span></h2><ol>${it.questions.map(q=>`<li class="sc-q">${esc(q)}</li>`).join('')}</ol></div>`;
+    }
+    const el = document.getElementById('tab-selfcheck'); el.innerHTML = html;
+    el.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', ()=> showDetail(b.dataset.go)));
+  }
+  // ---------- worksheets tab ----------
+  const WS_KEY = 'paper-tree-worksheets-v1';
+  let wsState = {}, wsActive = null;
+  function loadWs(){ try { const s = localStorage.getItem(WS_KEY); if (s) wsState = JSON.parse(s) || {}; } catch(e){} }
+  function saveWs(){ try { localStorage.setItem(WS_KEY, JSON.stringify(wsState)); } catch(e){ toast('無法儲存學習單筆記（瀏覽器儲存被封鎖）'); } }
+  function wsOf(id){ return wsState[id] || (wsState[id] = { notes:{}, checks:[], done:false }); }
+  function wsIsDone(w){ const s = wsState[w.id]; return !!(s && w.checklist.length && w.checklist.every((_,i)=>s.checks[i])); }
+  const PRI_ZH = { core:'必看', recommended:'建議', optional:'可跳過' };
+  function renderWorksheets(){
+    const W = T.worksheets, el = document.getElementById('tab-worksheets'); if (!W) { el.innerHTML = '<div class="empty">此版本沒有學習單資料。</div>'; return; }
+    if (!wsActive || !W.items.some(w=>w.id===wsActive)) { const first = W.items.find(w=>w.priority==='core' && !wsIsDone(w)) || W.items[0]; wsActive = first.id; }
+    const s = W.series[0];
+    const coreAll = W.items.filter(w=>w.priority==='core'), coreDone = coreAll.filter(wsIsDone).length, allDone = W.items.filter(wsIsDone).length;
+    el.innerHTML = `<div class="card" id="wsIntro"><h2>學習單：${esc(s.title)}</h2>
+      <p class="small">必看 ${coreDone}/${coreAll.length} · 全部 ${allDone}/${W.items.length}</p>
+      <p><a href="${esc(s.first_video)}" target="_blank" rel="noopener">從第 1 集開始</a> · <a href="${esc(s.playlist)}" target="_blank" rel="noopener">完整播放清單</a></p>
+      <details><summary>說明</summary><p><strong>需不需要再補李宏毅的線性代數？</strong> ${esc(s.verdict)}</p>
+      <p class="small">${esc(s.subtitles)}</p>
+      <p><strong>每集怎麼用學習單</strong></p><ul>${s.how_to.map(h=>`<li>${esc(h)}</li>`).join('')}</ul></details></div>
+      <div class="wsgrid"><nav class="wslist" id="wsList">${W.items.map(w=>`<button class="wsitem ${w.id===wsActive?'active':''} ${wsIsDone(w)?'done':''}" data-ws="${esc(w.id)}"><span class="ep">${wsIsDone(w)?'✓ ':''}${/^\d+$/.test(w.ep)?'第 '+esc(w.ep)+' 集':esc(w.ep)}　<span class="pri ${w.priority}">${PRI_ZH[w.priority]}</span></span><span class="tt">${esc(w.title_zh.replace(/^第 \d+ 集：|^補充：|^微分方程 第 6 集：/,''))}</span><span class="mm">${w.minutes} 分鐘</span></button>`).join('')}</nav>
+      <article class="card wsbody" id="wsBody"></article></div>`;
+    el.querySelectorAll('[data-ws]').forEach(b => b.addEventListener('click', ()=>{ wsActive = b.dataset.ws; renderWorksheets(); window.scrollTo({top:0}); history.replaceState(null,'','#tab=worksheets&ws='+wsActive); }));
+    renderWsBody();
+  }
+  function renderWsBody(){
+    const w = T.worksheets.items.find(x=>x.id===wsActive), box = document.getElementById('wsBody'), st = wsOf(w.id), N = st.notes;
+    const ta = (k, ph) => `<textarea data-k="${k}" placeholder="${esc(ph||'寫在這裡…')}">${esc(N[k]||'')}</textarea>`;
+    const ans = a => `<details class="ans"><summary>答案</summary><div>${esc(a)}</div></details>`;
+    box.innerHTML = `<h2>${/^\d+$/.test(w.ep)?'第 '+esc(w.ep)+' 集　':''}${esc(w.title_zh.replace(/^第 \d+ 集：/,''))}</h2>
+      <p class="small">${esc(w.title_en)} · ${w.minutes} 分鐘 · <span class="pri ${w.priority}">${PRI_ZH[w.priority]}</span>${w.chapters.length?`<br>官方章節：${w.chapters.map(esc).join('　')}`:''}</p>
+      <div class="wsbar"><a class="btn primary" href="${esc(w.url)}" target="_blank" rel="noopener" title="建議開中文字幕">開啟影片</a><button id="wsPrint">列印</button><button id="wsMd" title="含我的筆記">匯出 Markdown</button><button id="wsDone">${wsIsDone(w)?'✓ 已完成':'檢核項全勾即完成'}</button></div>
+      <p><strong>為什麼要看：</strong>${esc(w.why)}</p>
+      <div class="sec"><h3>學習目標</h3><ul>${w.goals.map(g=>`<li>${esc(g)}</li>`).join('')}</ul></div>
+      <div class="sec"><h3>① 看前預測</h3>${w.predict.map((q,i)=>`<div class="wsq">${i+1}. ${esc(q)}</div>${ta('p'+i)}`).join('')}</div>
+      <div class="sec"><h3>② 看影片時暫停寫下</h3>${w.watch.map((c,i)=>`<div class="wscue">暫停於：${esc(c.cue)}</div><div class="wsq">${esc(c.task)}</div>${ta('w'+i)}`).join('')}</div>
+      <div class="sec"><h3>③ 手算練習</h3>${w.practice.map((p,i)=>`<div class="wsq">${i+1}. ${esc(p.q)}</div>${ta('x'+i,'你的計算過程與答案')}${ans(p.a)}`).join('')}</div>
+      <div class="sec"><h3>④ 連到老師的論文</h3>${w.paper.map((p,i)=>`<div class="wsq">${i+1}. ${esc(p.q)}</div>${ta('r'+i,'你的想法')}${ans(p.a)}`).join('')}</div>
+      <div class="sec"><h3>⑤ 檢核</h3>${w.checklist.map((c,i)=>`<label class="chk"><input type="checkbox" data-c="${i}" ${st.checks[i]?'checked':''}> ${esc(c)}</label>`).join('')}
+        <div class="wsq">一句話總結：${esc(w.summary_prompt)}</div>${ta('s')}</div>`;
+    box.querySelectorAll('textarea').forEach(t => t.addEventListener('input', ()=>{ N[t.dataset.k] = t.value; saveWs(); }));
+    box.querySelectorAll('input[data-c]').forEach(c => c.addEventListener('change', ()=>{ st.checks[+c.dataset.c] = c.checked; saveWs(); const was = document.getElementById('wsDone'); was.textContent = wsIsDone(w) ? '✓ 已完成' : '檢核項全勾即完成'; const item = document.querySelector(`.wsitem[data-ws="${w.id}"]`); if (item) { item.classList.toggle('done', wsIsDone(w)); } if (wsIsDone(w)) toast('這份學習單完成了'); }));
+    document.getElementById('wsPrint').addEventListener('click', ()=>{ box.querySelectorAll('details.ans').forEach(d=>d.open=false); window.print(); });
+    document.getElementById('wsMd').addEventListener('click', ()=>{
+      const L = [`# ${w.title_zh}`, '', `影片：${w.url}　（${w.title_en}，${w.minutes} 分鐘）`, '', `**為什麼要看：** ${w.why}`, '', '## 學習目標', ...w.goals.map(g=>'- '+g), '', '## ① 看前預測', ...w.predict.flatMap((q,i)=>[`${i+1}. ${q}`, '', '> '+(N['p'+i]||'（未填）').replace(/\n/g,'\n> '), '']), '## ② 看影片時', ...w.watch.flatMap((c,i)=>[`- ⏸ ${c.cue}`, `  - ${c.task}`, '', '> '+(N['w'+i]||'（未填）').replace(/\n/g,'\n> '), '']), '## ③ 手算練習', ...w.practice.flatMap((p,i)=>[`${i+1}. ${p.q}`, '', '> '+(N['x'+i]||'（未填）').replace(/\n/g,'\n> '), '', `<details><summary>答案</summary>${p.a}</details>`, '']), '## ④ 連到老師的論文', ...w.paper.flatMap((p,i)=>[`${i+1}. ${p.q}`, '', '> '+(N['r'+i]||'（未填）').replace(/\n/g,'\n> '), '', `<details><summary>參考答案</summary>${p.a}</details>`, '']), '## ⑤ 檢核', ...w.checklist.map((c,i)=>`- [${st.checks[i]?'x':' '}] ${c}`), '', `**一句話總結（${w.summary_prompt}）：** ${N.s||'（未填）'}`, ''];
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([L.join('\n')], {type:'text/markdown'})); a.download = w.id + '.md'; a.click();
+    });
+  }
+
+  // ---------- glossary tab ----------
+  function renderGlossary(){
+    const gl = T.glossary; if (!gl) return;
+    const q = (document.getElementById('gq').value || '').trim().toLowerCase();
+    const chip = id => { const p = byId.get(id); return p ? `<a class="${state.done[id]?'done':''}" data-go="${esc(id)}" title="${esc(p.title)}">${state.done[id]?'✓ ':''}${esc(id)}</a>` : ''; };
+    let html = `<div class="card"><h2>術語與數學</h2><details><summary class="small" style="cursor:pointer">說明</summary><p class="small">${esc(gl.intro)}</p></details><p class="small dep">數學補強：${['L0-math-linalg','L0-math-opt','L0-math-prob','L0-math-signal','L0-math-attention','L0-math-ssm','L0-math-stats','L0-phon-video','L0-asr-video'].filter(id=>byId.has(id)).map(chip).join(' ')}</p></div>`;
+    let shown = 0;
+    for (const g of gl.groups) {
+      const terms = g.terms.filter(t => !q || [t.en, t.zh, t.def, t.usage].join(' ').toLowerCase().includes(q));
+      if (!terms.length) continue; shown += terms.length;
+      html += `<div class="card"><h2>${esc(g.name)} <span class="small">（${terms.length}）</span></h2><table class="stack"><thead><tr><th style="width:22%">術語</th><th style="width:30%">是什麼</th><th>她怎麼用</th><th style="width:18%">去哪裡學</th></tr></thead><tbody>${terms.map(t=>`<tr><td><strong>${esc(t.en)}</strong><br><span class="small">${esc(t.zh)}</span></td><td data-l="是什麼">${esc(t.def)}</td><td data-l="她怎麼用">${esc(t.usage)}</td><td class="dep" data-l="去哪裡學">${(t.nodes||[]).map(chip).join('')}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+    if (!shown) html += '<div class="empty">沒有符合的術語。</div>';
+    const el = document.getElementById('glossaryBody'); el.innerHTML = html;
+    el.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', ()=> showDetail(b.dataset.go)));
+  }
+  document.getElementById('gq').addEventListener('input', renderGlossary);
+
+  // ---------- lab tab ----------
+  function renderLab(){
+    const lf = T.lab_current_focus, p = T.professor;
+    let html = `<div class="card"><h2>教授與實驗室概況</h2><p>${esc(p.research_summary)}</p><p class="small"><strong>學歷：</strong>${esc(p.education.join('；'))}<br><strong>經歷：</strong>${esc(p.experience.join('；'))}<br><strong>研究領域：</strong>${esc(p.research_fields.join('、'))}</p><p class="small"><strong>身分確認：</strong>${p.official_pages.map(o=>`<a href="${esc(o.url)}" target="_blank" rel="noopener">${esc(o.label)}</a>`).join(' · ')}</p><ul class="small">${p.identity_notes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+    html += `<div class="card"><h2>實驗室目前研究方向（截至 ${esc(lf.as_of)}）</h2><p class="small">依據：${esc(lf.evidence)}</p><div class="tscroll"><table><thead><tr><th style="width:15%">主題</th><th style="width:21%">依據</th><th>常用方法</th><th style="width:18%">工具</th><th style="width:18%">資料集</th></tr></thead><tbody>${lf.themes.map(t=>`<tr><td><strong>${esc(t.theme)}</strong></td><td>${esc(t.evidence)}</td><td>${esc(t.methods)}</td><td>${esc(t.tools)}</td><td>${esc(t.datasets)}</td></tr>`).join('')}</tbody></table></div><p class="small" style="margin-top:10px"><strong>指導學生論文：</strong>${esc(lf.students_note)}</p></div>`;
+    if (lf.seniors && lf.seniors.length) html += `<div class="card"><h2>實驗室學長的研究軌跡</h2><div class="tscroll"><table><thead><tr><th style="width:12%">姓名</th><th>狀態</th><th>研究方向</th><th>依據</th><th>節點</th><th>seminar 讀過</th></tr></thead><tbody>${lf.seniors.map(s=>`<tr><td><strong>${esc(s.name)}</strong>${s.website?`<br><a href="${esc(s.website)}" target="_blank" rel="noopener" class="small">個人網站</a>`:''}</td><td>${esc(s.status)}</td><td>${esc(s.direction)}</td><td>${esc(s.evidence)}</td><td><button data-go="${esc(s.node)}" class="linkbtn">${esc(s.node)}</button></td><td class="dep">${(s.reading_list||[]).map(id=>byId.get(id)?`<a class="${state.done[id]?'done':''}" data-go="${esc(id)}" title="${esc(byId.get(id).title)}">${state.done[id]?'✓ ':''}${esc(id)}</a>`:'').join('')}</td></tr>`).join('')}</tbody></table></div></div>`;
+    const labEl = document.getElementById('tab-lab'); labEl.innerHTML = html;
+    labEl.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', ()=> showDetail(b.dataset.go)));
+  }
+  // ---------- sources tab ----------
+  function renderSources(){
+    let html = `<div class="card"><h2>資料來源與查詢日期</h2><table class="stack"><thead><tr><th>來源</th><th>用途</th><th>查詢日</th></tr></thead><tbody>${T.sources.map(s=>`<tr><td style="width:30%"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a></td><td data-l="用途">${esc(s.used_for)}</td><td class="nw" data-l="查詢日">${esc(s.queried)}</td></tr>`).join('')}</tbody></table></div>`;
+    html += `<div class="card"><h2>待查證</h2><table><thead><tr><th>項目</th><th>原因</th><th>狀態</th></tr></thead><tbody>${T.unverified.map(u=>`<tr><td><strong>${esc(u.title)}</strong><br><span class="small">${esc(u.authors)} · ${esc(u.year||'')} · ${esc(u.venue)}</span></td><td>${esc(u.reason)}</td><td>${esc(u.status)}</td></tr>`).join('')}</tbody></table></div>`;
+    html += `<div class="card"><h2>不收錄項目</h2><table><thead><tr><th>項目</th><th>原因</th></tr></thead><tbody>${T.excluded.map(u=>`<tr><td>${esc(u.title)}</td><td>${esc(u.reason)}</td></tr>`).join('')}</tbody></table></div>`;
+    html += `<div class="card"><h2>逢甲教師頁著作與樹節點對應</h2><p class="small">${esc(T.coverage_check.note)}</p><table><thead><tr><th>教師頁條目</th><th>樹節點</th></tr></thead><tbody>${T.coverage_check.mapping.map(m=>`<tr><td>${esc(m.fcu_entry)}</td><td>${m.node?`<button data-go="${esc(m.node)}" class="linkbtn">${esc(m.node)}</button>`:esc(m.reason||'—')}</td></tr>`).join('')}</tbody></table></div>`;
+    const el = document.getElementById('tab-sources'); el.innerHTML = html;
+    el.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', ()=> showDetail(b.dataset.go)));
+  }
+
+  // ---------- graph view ----------
+  const G = { built:false, pos:new Map(), vb:null, zoom:1, tx:0, ty:0, hidden:new Set(), sel:null };
+  const NW = 150, NH = 46, CW = 166, RH = 60, LAYER_GAP = 90, BRANCH_GAP = 40;
+  const BR_ORDER = ['found','tone','variation','child','deepfake'];
+  function shortTitle(t){ t = String(t).replace(/（.*?）|\(.*?\)/g,'').trim(); return t.length > 40 ? t.slice(0,39) + '…' : t; }
+  function wrap2(t){ const a = shortTitle(t); if (a.length <= 21) return [a]; const cut = a.slice(0,21), rest = a.slice(21); return [cut, rest.length > 20 ? rest.slice(0,19)+'…' : rest]; }
+  function gVisible(n){ if (G.hidden.has(n.branch)) return false; if (document.getElementById('gCore').checked && n.priority === 'optional') return false; return true; }
+  function layoutGraph(){
+    const orderIdx = new Map(order.map((id,i)=>[id,i]));
+    const vis = T.nodes.filter(gVisible);
+    const layers = T.layers.map(l=>l.id).sort((a,b)=>a-b);
+    // columns per branch
+    const cols = {}; for (const b of BR_ORDER) { let k = 1; for (const L of layers) { const n = vis.filter(x=>x.branch===b && x.layer===L).length; k = Math.max(k, Math.ceil(Math.sqrt(n/2))); } cols[b] = k; }
+    const bx = {}; let x = 60; for (const b of BR_ORDER) { if (G.hidden.has(b)) continue; bx[b] = x; x += cols[b]*CW + BRANCH_GAP; }
+    const totalW = x;
+    // rows: layer 0 at bottom
+    G.pos.clear(); const bands = []; let y = 40;
+    for (const L of [...layers].reverse()) {
+      let rows = 1; const cells = {};
+      for (const b of BR_ORDER) { if (G.hidden.has(b)) continue; const ns = vis.filter(n=>n.branch===b && n.layer===L).sort((a,c)=>(orderIdx.get(a.id)-orderIdx.get(c.id))); cells[b] = ns; rows = Math.max(rows, Math.ceil(ns.length/cols[b])); }
+      bands.push({ layer:L, y, h: rows*RH + 20 });
+      for (const b of BR_ORDER) { if (G.hidden.has(b)) continue; cells[b].forEach((n,i)=>{ const c = i % cols[b], r = Math.floor(i/cols[b]); G.pos.set(n.id, { x: bx[b] + c*CW + NW/2, y: y + 10 + r*RH + NH/2, n }); }); }
+      y += rows*RH + 20 + LAYER_GAP;
+    }
+    // one barycenter pass per row to reduce crossings: reorder within cell by mean x of placed prereqs (lower layers already have positions since we built top-down, so use dependents instead) — keep simple: skip.
+    return { totalW, totalH: y, bands, bx, cols };
+  }
+  function buildGraph(){
+    const root = document.getElementById('gRoot'); root.innerHTML = '';
+    const { totalW, totalH, bands, bx, cols } = layoutGraph();
+    const NS = 'http://www.w3.org/2000/svg';
+    const el = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+    for (const b of bands) { root.appendChild(el('rect', { class:'gband', x:0, y:b.y, width:totalW, height:b.h })); const t = el('text', { class:'glayer', x:8, y:b.y - 8 }); t.textContent = T.layers.find(l=>l.id===b.layer).name; root.appendChild(t); }
+    for (const b of BR_ORDER) { if (G.hidden.has(b)) continue; const br = T.branches.find(x=>x.id===b); const t = el('text', { class:'gbranch', x: bx[b], y: 22, fill: branchColor(b) }); t.textContent = br.name; root.appendChild(t); }
+    const edges = el('g', {}); root.appendChild(edges);
+    const showCite = document.getElementById('gCited').checked;
+    for (const n of T.nodes) { const to = G.pos.get(n.id); if (!to) continue;
+      for (const p of n.prereqs) { const from = G.pos.get(p); if (!from) continue; edges.appendChild(el('path', { class:'gedge', 'data-from':p, 'data-to':n.id, d: curve(from, to) })); }
+      if (showCite) for (const c of n.cited_by_her || []) { const to2 = G.pos.get(c); if (!to2) continue; edges.appendChild(el('path', { class:'gedge cite', 'data-from':n.id, 'data-to':c, d: curve(to, to2) })); }
+    }
+    const nodesG = el('g', {}); root.appendChild(nodesG);
+    for (const [id, p] of G.pos) { const n = p.n; const g = el('g', { class:'gnode' + (state.done[id]?' done':''), transform:`translate(${p.x - NW/2},${p.y - NH/2})`, 'data-id':id });
+      g.appendChild(el('rect', { width:NW, height:NH, stroke:branchColor(n.branch), 'stroke-dasharray': n.priority==='optional' ? '3 2' : '' }));
+      const lines = wrap2(n.title); lines.forEach((ln,i)=>{ const t = el('text', { x:7, y:15 + i*12 }); t.textContent = ln; g.appendChild(t); });
+      const idt = el('text', { class:'gid', x:7, y:NH-5 }); idt.textContent = `${id} · ${n.year} · ${n.est_hours}h${state.done[id]?' ✓':''}`; g.appendChild(idt);
+      g.addEventListener('click', ()=>{ selectGraphNode(id); showDetail(id); });
+      g.addEventListener('mousemove', e=>{ const tip = document.getElementById('gTip'); tip.style.display='block'; tip.textContent = n.title; const r = document.getElementById('gWrap').getBoundingClientRect(); tip.style.left = (e.clientX - r.left + 12) + 'px'; tip.style.top = (e.clientY - r.top + 12) + 'px'; });
+      g.addEventListener('mouseleave', ()=>{ document.getElementById('gTip').style.display='none'; });
+      nodesG.appendChild(g);
+    }
+    G.vb = { w: totalW, h: totalH }; G.built = true;
+    if (G.sel && G.pos.has(G.sel)) selectGraphNode(G.sel); else G.sel = null;
+    fitGraph();
+  }
+  function curve(a, b){ const y1 = a.y - NH/2, y2 = b.y + NH/2; const m = (y1 + y2)/2; return `M${a.x},${y1} C${a.x},${m} ${b.x},${m} ${b.x},${y2}`; }
+  function selectGraphNode(id){
+    G.sel = id; const anc = new Set(), des = new Set();
+    (function up(i){ for (const p of (byId.get(i)||{}).prereqs||[]) if (!anc.has(p)) { anc.add(p); up(p); } })(id);
+    (function down(i){ for (const d of dependents.get(i)||[]) if (!des.has(d)) { des.add(d); down(d); } })(id);
+    document.querySelectorAll('.gnode').forEach(g => { const i = g.dataset.id; g.classList.toggle('sel', i===id); g.classList.toggle('dim', !(i===id || anc.has(i) || des.has(i))); });
+    document.querySelectorAll('.gedge').forEach(e => { const f = e.dataset.from, t = e.dataset.to; const on = !e.classList.contains('cite') && ((t===id||des.has(t)) && (f===id||anc.has(f)||des.has(f)) || (f===id||anc.has(f)) && (t===id||anc.has(t))); e.classList.toggle('hl', on); e.classList.toggle('dim', !on); });
+  }
+  function clearGraphSel(){ G.sel = null; document.querySelectorAll('.gnode,.gedge').forEach(e=>{ e.classList.remove('sel','dim','hl'); }); }
+  function applyGraphTransform(){ document.getElementById('gRoot').setAttribute('transform', `translate(${G.tx},${G.ty}) scale(${G.zoom})`); }
+  function fitGraph(){ const w = document.getElementById('gWrap').clientWidth, h = document.getElementById('gWrap').clientHeight; if (!G.vb) return; G.zoom = Math.min(w / G.vb.w, h / G.vb.h, 1.2) * 0.97; G.tx = (w - G.vb.w*G.zoom)/2; G.ty = (h - G.vb.h*G.zoom)/2; applyGraphTransform(); }
+  (function initGraphUI(){
+    const svg = document.getElementById('gSvg'); let drag = null;
+    svg.addEventListener('wheel', e => { e.preventDefault(); const r = svg.getBoundingClientRect(); const mx = e.clientX - r.left, my = e.clientY - r.top; const f = e.deltaY < 0 ? 1.15 : 1/1.15; const nz = Math.max(0.08, Math.min(3, G.zoom*f)); G.tx = mx - (mx - G.tx) * (nz/G.zoom); G.ty = my - (my - G.ty) * (nz/G.zoom); G.zoom = nz; applyGraphTransform(); }, { passive:false });
+    svg.addEventListener('mousedown', e => { drag = { x:e.clientX, y:e.clientY, tx:G.tx, ty:G.ty, moved:false }; svg.style.cursor='grabbing'; });
+    window.addEventListener('mousemove', e => { if (!drag) return; const dx = e.clientX-drag.x, dy = e.clientY-drag.y; if (Math.abs(dx)+Math.abs(dy) > 3) drag.moved = true; G.tx = drag.tx + dx; G.ty = drag.ty + dy; applyGraphTransform(); });
+    window.addEventListener('mouseup', e => { if (drag && !drag.moved && e.target === svg) clearGraphSel(); drag = null; svg.style.cursor='grab'; });
+    svg.addEventListener('touchstart', e => { if (e.touches.length===1) drag = { x:e.touches[0].clientX, y:e.touches[0].clientY, tx:G.tx, ty:G.ty }; }, { passive:true });
+    svg.addEventListener('touchmove', e => { if (!drag || e.touches.length!==1) return; G.tx = drag.tx + e.touches[0].clientX-drag.x; G.ty = drag.ty + e.touches[0].clientY-drag.y; applyGraphTransform(); }, { passive:true });
+    svg.addEventListener('touchend', ()=> drag = null);
+    document.getElementById('gFit').addEventListener('click', fitGraph);
+    document.getElementById('gCore').addEventListener('change', buildGraph);
+    document.getElementById('gCited').addEventListener('change', buildGraph);
+    window.addEventListener('resize', ()=>{ if (G.built && !document.getElementById('tab-graph').hidden) fitGraph(); });
+  })();
+  function renderGraphControls(){
+    const el = document.getElementById('gBranches'); el.innerHTML = '';
+    for (const b of T.branches) { const lab = document.createElement('label'); lab.className='small'; lab.style.marginRight='8px'; lab.innerHTML = `<input type="checkbox" checked data-b="${b.id}"> <span style="color:${branchColor(b.id)};font-weight:600">${esc(b.name)}</span>`; lab.querySelector('input').addEventListener('change', e=>{ if (e.target.checked) G.hidden.delete(b.id); else G.hidden.add(b.id); buildGraph(); }); el.appendChild(lab); }
+    document.getElementById('gLegend').innerHTML = `<span>實線框 必讀／建議</span><span>虛線框 選讀</span><span style="color:var(--ok)">綠底 已完成</span><span>下方為先修</span><span style="color:var(--warn)">橘虛線 她引用</span>`;
+  }
+
+  // ---------- events ----------
+  document.querySelectorAll('.tabs [role=tab]').forEach(btn => btn.addEventListener('click', ()=>{
+    if (window.__renderRest) window.__renderRest();
+    document.querySelectorAll('.tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected', b===btn));
+    document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== 'tab-' + btn.dataset.tab);
+    if (btn.dataset.tab === 'graph') { if (!G.built) buildGraph(); else fitGraph(); }
+    btn.scrollIntoView({ block:'nearest', inline:'nearest' });
+  }));
+  // 配色：auto＝不設 data-palette，跟系統深淺色；其他值固定配色並記在這個瀏覽器
+  const PALETTE_KEY = 'paper-tree-palette';
+  function markPalette(){ const cur = document.documentElement.dataset.palette || 'auto'; document.querySelectorAll('#palettes [data-p]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.p === cur))); }
+  function setPalette(p){
+    const apply = () => { if (p === 'auto') delete document.documentElement.dataset.palette; else document.documentElement.dataset.palette = p; markPalette(); };
+    if (document.startViewTransition && !RM.matches) document.startViewTransition(apply); else apply();
+    try { p === 'auto' ? localStorage.removeItem(PALETTE_KEY) : localStorage.setItem(PALETTE_KEY, p); } catch(e){}
+  }
+  document.querySelectorAll('#palettes [data-p]').forEach(b => b.addEventListener('click', ()=> setPalette(b.dataset.p)));
+  markPalette();
+  // 桌面版側欄可收合，狀態只存在這個瀏覽器
+  const ASIDE_KEY = 'paper-tree-aside-collapsed';
+  function setAsideCollapsed(c){
+    const lay = document.querySelector('.layout'), btn = document.getElementById('asideToggle');
+    lay.classList.toggle('aside-collapsed', c);
+    btn.setAttribute('aria-expanded', String(!c)); btn.setAttribute('aria-label', c ? '展開側欄' : '收合側欄'); btn.title = btn.getAttribute('aria-label');
+    try { c ? localStorage.setItem(ASIDE_KEY, '1') : localStorage.removeItem(ASIDE_KEY); } catch(e){}
+  }
+  try { if (localStorage.getItem(ASIDE_KEY)) setAsideCollapsed(true); } catch(e){}
+  document.getElementById('asideToggle').addEventListener('click', ()=> setAsideCollapsed(!document.querySelector('.layout').classList.contains('aside-collapsed')));
+  document.getElementById('openNext').addEventListener('click', ()=>{ if (activeId) document.getElementById('backNext').click(); else renderNext(); const a = document.getElementById('aside'); a.scrollTop = 0; a.classList.add('open'); });
+  ['q','priFilter','layerFilter','hideDone','citedOnly','seniorOnly'].forEach(id => document.getElementById(id).addEventListener('input', renderTree));
+  document.getElementById('toggleAll').addEventListener('click', ()=>{ const expand = allCollapsed(); if (expand) state.collapsed = {}; for (const b of T.branches) state.collapsed['b:'+b.id] = !expand; saveState(); renderTree(); });
+  document.addEventListener('click', e => { document.querySelectorAll('details.menu[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; }); });
+  document.getElementById('resetBtn').addEventListener('click', ()=>{ if (confirm('確定要清除所有勾選進度？')) { state.done = {}; saveState(); renderTree(); renderTalk(); renderOrder(); updateProgress(); if (activeId) showDetail(activeId, true); else renderNext(); } });
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const data = JSON.stringify({ exported_at: new Date().toISOString(), done: state.done, worksheets: wsState, talk }, null, 2);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], {type:'application/json'})); a.download = 'paper-tree-progress.json'; a.click();
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify({done: state.done})))).replace(/\+/g,'-').replace(/\//g,'_');
+    try { navigator.clipboard.writeText(location.href.split('#')[0] + '#progress=' + b64); toast('已下載 JSON，並複製可分享的進度網址'); } catch(e){ toast('已下載 JSON'); }
+  });
+  document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+    r.onload = () => { try { const o = JSON.parse(r.result); if (!o.done) throw 0; state.done = o.done; if (o.worksheets) { wsState = o.worksheets; saveWs(); renderWorksheets(); } if (o.talk) { talk = Object.assign({ done:{}, notes:{} }, o.talk); saveTalk(); } saveState(); renderTree(); renderTalk(); renderOrder(); updateProgress(); if (activeId) showDetail(activeId, true); else renderNext(); toast('已匯入進度'); } catch(err){ toast('檔案格式不正確'); } };
+    r.readAsText(f); e.target.value = '';
+  });
+  document.getElementById('closeAside').addEventListener('click', ()=> document.getElementById('aside').classList.remove('open'));
+
+  // ---------- boot ----------
+  function boot(){
+    T = T || window.PAPER_TREE || null;
+    if (T) { loadState(); init(); return; }
+    // tree.data.js 不存在時（例如只有 tree.json），嘗試以 fetch 載入（需透過 http 伺服器開啟）
+    fetch('tree.json').then(r=>r.json()).then(j=>{ T = j; loadState(); init(); }).catch(()=>{ document.getElementById('tree').innerHTML = '<div class="empty">找不到 tree.data.js。請先執行 <kbd>node scripts/build-data.js</kbd> 產生資料檔，或以本機 http 伺服器開啟本頁。</div>'; });
+  }
+  // tree.data.js 已用 preload 先下載；等第一格畫面畫出來（或最多 300ms）再插入執行，首屏不被 360KB 的資料解析擋住
+  let dataStarted = false;
+  const startData = () => { if (dataStarted) return; dataStarted = true; const sc = document.createElement('script'); sc.src = 'tree.data.js'; sc.onload = boot; sc.onerror = boot; document.head.appendChild(sc); };
+  requestAnimationFrame(() => requestAnimationFrame(startData)); setTimeout(startData, 300);
+  // GSAP 只負責動效，等頁面載完再載入，不佔首屏頻寬；載入前的展開收合走原生即時切換
+  const loadGsap = () => { const sc = document.createElement('script'); sc.src = 'vendor/gsap/gsap.min.js'; document.head.appendChild(sc); };
+  if (document.readyState === 'complete') loadGsap(); else window.addEventListener('load', loadGsap);
+  // 透過網址開啟時註冊離線快取，讓手機加到主畫面後離線也能開（file:// 開啟時瀏覽器不支援，略過）
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+})();
+</script>
+</body>
+</html>

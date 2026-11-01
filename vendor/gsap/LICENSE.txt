@@ -1,0 +1,14 @@
+GSAP 3.15.0 — Standard "no charge" license (Webflow / GreenSock)
+Full text: https://gsap.com/standard-license  (checked 2026-10-29)
+
+Key terms as read on that date:
+- Free for commercial and non-commercial use, including all plugins.
+- Grants a non-exclusive, worldwide license to use, reproduce, display and
+  implement GSAP Products on any website, web application or digital interface.
+  Self-hosting these files inside this project is covered by "reproduce" and
+  "implement"; no CDN requirement.
+- Do not remove or alter the proprietary notices in the files (the /*! ... */
+  headers in each *.min.js are kept intact).
+- Prohibited: building a no-code animation tool that competes with Webflow,
+  or reverse engineering to create competitive products. Not applicable here.
+Files: gsap.min.js (core only) — copied unmodified from the npm package gsap@3.15.0 (dist/).
