@@ -425,13 +425,16 @@
     html += `<div class="card"><h2>台上會用到的詞</h2><table><tbody>${P.terms.map(x=>`<tr><td style="width:22%"><strong>${esc(x.term)}</strong></td><td>${esc(x.say)}</td></tr>`).join('')}</tbody></table></div>`;
     html += `<div class="card"><h2>預期問題（${P.qa.length}）</h2>${P.qa.map((q,i)=>`<details class="qa"><summary>${i+1}. ${esc(q.q)}</summary><textarea data-n="qa${i}" placeholder="我的答案">${esc(talk.notes['qa'+i]||'')}</textarea><details class="hint"><summary>提示</summary><p>${esc(q.hint)}</p>${(q.nodes||[]).length?`<p class="small dep">相關節點：${q.nodes.map(chip).join('')}</p>`:''}</details></details>`).join('')}</div>`;
     html += `<div class="card"><h2>我的講稿與筆記</h2>${P.pitch_prompts.map(p=>`<p style="margin-top:18px"><strong>${esc(p.label)}</strong></p><textarea data-n="${esc(p.key)}" placeholder="${esc(p.placeholder||'寫在這裡…')}">${esc(talk.notes[p.key]||'')}</textarea>`).join('')}</div>`;
+    // 追加區：不排日期、不算進進度與順延的選讀任務
+    const extras = P.extras || [];
+    if (extras.length) html += `<div class="card"><h2>追加 <span class="small">${extras.filter(taskDone).length}/${extras.length} 完成 · 約 ${hrs(extras)} 小時</span></h2><p class="small">${esc(P.extras_note||'')}</p><ul class="tasks">${extras.map(t=>row(t,'')).join('')}</ul></div>`;
     const openQa = [...el.querySelectorAll('details.qa')].map(d => d.open);
     el.innerHTML = html;
     el.querySelectorAll('details.qa').forEach((d,i) => { if (openQa[i]) d.open = true; });
     el.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); showDetail(a.dataset.go); }));
     el.querySelectorAll('textarea[data-n]').forEach(t => t.addEventListener('input', ()=>{ talk.notes[t.dataset.n] = t.value; saveTalk(); }));
     el.querySelectorAll('input[data-t]').forEach(c => c.addEventListener('change', ()=>{
-      const t = all.find(x => x.id === c.dataset.t);
+      const t = all.concat(extras).find(x => x.id === c.dataset.t);
       if (c.checked) talk.done[t.id] = ymd(new Date()); else delete talk.done[t.id];
       saveTalk();
       if (c.checked && t.marks_node && !state.done[t.node]) { setDone(t.node, true); toast('已一併在論文樹上完成節點'); } else renderTalk();
