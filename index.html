@@ -46,6 +46,7 @@
       <button role="tab" aria-selected="true" data-tab="tree">樹狀檢視</button>
       <button role="tab" aria-selected="false" data-tab="graph">圖形檢視</button>
       <button role="tab" aria-selected="false" data-tab="talk" id="talkTabBtn" hidden>報告準備</button>
+      <button role="tab" aria-selected="false" data-tab="preread">五篇優先預讀</button>
       <button role="tab" aria-selected="false" data-tab="order">閱讀順序</button>
       <button role="tab" aria-selected="false" data-tab="selfcheck">自我檢測</button>
       <button role="tab" aria-selected="false" data-tab="glossary">術語與數學</button>
@@ -96,6 +97,7 @@
       </div>
     </section>
     <section id="tab-talk" class="talk" hidden></section>
+    <section id="tab-preread" hidden></section>
     <section id="tab-order" hidden></section>
     <section id="tab-selfcheck" hidden></section>
     <section id="tab-worksheets" hidden></section>
@@ -341,13 +343,19 @@
     const el = document.getElementById('tab-order');
     const rp = T.reading_plan;
     let html = `<div class="card"><h2>建議閱讀順序</h2><p>總時數約 ${rp.total_hours} 小時（只走必讀＋建議約 ${rp.total_hours_core_recommended} 小時）；每週 ${rp.weekly_hours} 小時約需 ${rp.estimated_weeks} 週。</p><details><summary class="small" style="cursor:pointer">假設與時程</summary><p class="small">${esc(rp.assumptions)}</p><p class="small">${esc(rp.schedule_note)}</p></details></div>`;
-    for (const s of rp.segments) {
+    renderSegments(el, rp.segments, html);
+    const preread = rp.segments.filter(s => s.name.startsWith('優先預讀：'));
+    renderSegments(document.getElementById('tab-preread'), preread,
+      '<div class="card"><h2>五篇優先預讀</h2><p>依先修順序，從基礎讀到局部偽造定位、音訊 LLM 深偽偵測與生成式資料增強。點標題可看閱讀重點，勾選完成會同步到論文樹與閱讀順序。</p></div>');
+  }
+  function renderSegments(el, segments, html){
+    for (const s of segments) {
       const nodes = s.nodes.map(id=>byId.get(id)).filter(Boolean);
       const d = nodes.filter(n=>state.done[n.id]).length, h = nodes.reduce((a,n)=>a+n.est_hours,0);
       html += `<div class="card seg"><h2>段 ${s.order}：${esc(s.name)}</h2><div class="sp"><span class="bar"><i style="width:${nodes.length?Math.round(d/nodes.length*100):0}%"></i></span>${d}/${nodes.length} 完成 · 約 ${h} 小時</div><p class="goal"><strong>目標：</strong>${esc(s.goal)}</p><ul class="nodes" data-seg="${s.order}"></ul></div>`;
     }
     el.innerHTML = html;
-    for (const s of rp.segments) { const ul = el.querySelector(`ul[data-seg="${s.order}"]`); for (const id of s.nodes) { const n = byId.get(id); if (n) ul.appendChild(nodeRow(n)); } }
+    for (const s of segments) { const ul = el.querySelector(`ul[data-seg="${s.order}"]`); for (const id of s.nodes) { const n = byId.get(id); if (n) ul.appendChild(nodeRow(n)); } }
   }
   // ---------- talk plan tab ----------
   const TALK_KEY = 'paper-tree-talk-v1';
